@@ -1,0 +1,17 @@
+numpy
+
+tensorflow
+
+opencv-python
+opencv-contrib-python
+
+pillow
+
+matplotlib
+
+loguru
+
+# Python check
+flake8
+pylint
+dlint
