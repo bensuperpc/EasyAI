@@ -78,18 +78,17 @@ class AI:
             logger.debug("Using data augmentation")
             data_augmentation = tf.keras.Sequential([
                 layers.RandomFlip("horizontal_and_vertical"),
-                # layers.RandomRotation(0.2),
-                # layers.RandomZoom(0.1),
+                layers.RandomRotation(0.2),
+                layers.RandomZoom(0.1),
                 # layers.RandomContrast(0.1),
                 # layers.RandomBrightness(0.1),
             ])
-            #logger.debug(f"Without augmentation: {len(ds)}")
+            logger.debug(f"Dataset size without augmentation: {len(ds)}")
             ds_aug = ds.map(lambda x, y: (data_augmentation(x, training=True), y),
                             num_parallel_calls=self._AUTOTUNE)
             ds = ds.concatenate(ds_aug)
-            #logger.debug(f"With augmentation: {len(ds)}")
-            #logger.debug(f"Type of ds: {type(ds)}")
-            #logger.debug("Data augmentation done")
+            logger.debug(f"Dataset size with augmentation: {len(ds)}")
+            logger.debug("Data augmentation done")
 
         ds = ds.prefetch(buffer_size=self._AUTOTUNE)
         return ds
@@ -112,6 +111,32 @@ class AI:
             layers.Dropout(0.2),
             layers.Flatten(),
             layers.Dense(256, activation='relu'),
+            layers.Dense(len(self._class_names))
+        ])
+
+        model.build((None, self._img_height, self._img_width, 3))
+        model.summary()
+
+        return model
+
+    def get_ci_model(self):
+        # data_augmentation = tf.keras.Sequential([
+        #  layers.RandomFlip("horizontal_and_vertical"),
+        #  layers.RandomRotation(0.2),
+        # ])
+
+        model = Sequential([
+            # data_augmentation,
+            layers.Rescaling(1./255),
+            layers.Conv2D(12, 3, padding='same', activation='relu'),
+            layers.MaxPooling2D(),
+            layers.Conv2D(24, 3, padding='same', activation='relu'),
+            layers.MaxPooling2D(),
+            layers.Conv2D(48, 3, padding='same', activation='relu'),
+            layers.MaxPooling2D(),
+            layers.Dropout(0.2),
+            layers.Flatten(),
+            layers.Dense(96, activation='relu'),
             layers.Dense(len(self._class_names))
         ])
 
@@ -614,6 +639,9 @@ if __name__ == '__main__':
     parser.add_argument("--checkpoint", action=argparse.BooleanOptionalAction,
                         default=False, help="Enable checkpoint")
 
+    parser.add_argument("--continuous-integration", action=argparse.BooleanOptionalAction,
+                        default=False, help="Enable continuous integration test")
+
     parser.add_argument("--load", type=str,
                         default=None, help="Load a model")
     parser.add_argument("--save", type=str,
@@ -688,6 +716,9 @@ if __name__ == '__main__':
     #logger.debug(f"metrics: {args.metrics}")
     #ai.metrics = args.metrics
 
+    logger.debug(f"continuous_integration: {args.continuous_integration}")
+    #ai.continuous_integration = args.continuous_integration
+
     if args.tensorboard:
         logger.debug("Enable tensorboard")
         log_dir = "./logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -730,6 +761,9 @@ if __name__ == '__main__':
 
     ai.load_data()
     ai.prepare_train()
+
+    if args.continuous_integration:
+        ai.model = ai.get_ci_model()
 
     if args.load is not None:
         ai.load_model(args.load)
