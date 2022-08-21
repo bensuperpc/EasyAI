@@ -40,4 +40,4 @@ jobs:
       
       - name: "run tests"
         run: |
-          python ai.py --no-display
+          python open_nsfw.py --no-display

@@ -114,9 +114,9 @@ class AI:
             layers.Dense(256, activation='relu'),
             layers.Dense(len(self._class_names))
         ])
-        
-        # model.build((None, self._img_height, self._img_width, 3))
-        # model.summary()
+
+        model.build((None, self._img_height, self._img_width, 3))
+        model.summary()
 
         return model
 
@@ -147,10 +147,34 @@ class AI:
             self._model.save(model_path, save_format='h5')
             logger.debug(f"Model saved to {model_path}")
         else:
+            save_path = f"model_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.h5"
             logger.warning(
-                "Model path is None, model saved to default path: model.h5")
-            self._model.save("model.h5", save_format='h5')
-            logger.debug("Model saved to: model.h5")
+                f"Model path is None, model saved to default path: {save_path}")
+
+            self._model.save(save_path, save_format='h5')
+            logger.debug(f"Model saved to: {save_path}")
+
+    def load_weights(self, weights_path=None):
+        if weights_path is not None:
+            self._model.load_weights(weights_path)
+            logger.debug(f"Weights {weights_path} loaded")
+        elif weights_path is None and self._model is not None:
+            logger.debug("Weights is already loaded")
+        else:
+            logger.warning("Weights is None, load default weights")
+            self._model.load_weights("weights.h5")
+            logger.debug("Weights loaded to: weights.h5")
+
+    def save_weights(self, weights_path=None):
+        if weights_path is not None:
+            self._model.save_weights(weights_path)
+            logger.debug(f"Weights saved to {weights_path}")
+        else:
+            save_path = f"weights_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.h5"
+            logger.warning(
+                "Weights path is None, weights saved to default path: {save_path}")
+            self._model.save_weights(save_path)
+            logger.debug("Weights saved to: {save_path}")
 
     def load_data(self, data_dir=None):
         if data_dir is not None:
@@ -201,20 +225,13 @@ class AI:
         logger.debug(f"Epochs: {self._epochs}")
         logger.debug(f"Batch size: {self._batch_size}")
 
-        if self._tensorboard is True:
-            logger.debug("Tensorboard is enabled")
-            log_dir = "./logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-            logger.debug(f"Log dir: {log_dir}")
-
-            # Create folder for tensorboard if not exist
-            Path(log_dir).mkdir(parents=True, exist_ok=True)
-            tb_callback = [tf.keras.callbacks.TensorBoard(
-                log_dir, histogram_freq=1, write_graph=True, write_images=True, update_freq=1)]
+        if self._tf_callbacks:
+            logger.debug("Enable Tensorflow callback")
             self._history = self._model.fit(
                 self._train_ds,
                 epochs=self._epochs,
                 validation_data=self._val_ds,
-                callbacks=tb_callback,
+                callbacks=self._tf_callbacks,
                 verbose=1
             )
         else:
@@ -235,14 +252,12 @@ class AI:
 
         return loss, accuracy
 
-    # TODO : Need to be fixed
-    def predict(self, img_path):
+    # TODO : Need to more test
+    def predict_v1(self, img_path=None):
         logger.debug("Start prediction")
-        # img = keras.preprocessing.image.load_img(
-        #    img_path, target_size=(self._img_height, self._img_width)
-        # )
-        #img_array = keras.preprocessing.image.img_to_array(img)
-        #img_array = tf.expand_dims(img_array, 0)
+        if img_path is None:
+            logger.warning("Image path is None !")
+            return
 
         image = cv.imread(img_path, 0)
 
@@ -253,8 +268,30 @@ class AI:
         image_tensor = tf.convert_to_tensor(image, dtype=tf.float32)
         image_tensor = tf.expand_dims(image_tensor, 0)
 
+        if self._model is None:
+            logger.warning("Model is None !")
+            return
+
         predictions = self._model.predict(image_tensor)
 
+        logger.debug(
+            f"Predictions: {self._class_names[predictions]}")
+        return predictions
+
+    def predict_v2(self, img_path=None):
+        logger.debug("Start prediction")
+        img_width, img_height = 150, 150
+        img = keras.preprocessing.image.load_img(
+            'image_path/image_name.jpg', target_size=(img_width, img_height))
+        img = keras.preprocessing.image.img_to_array(img)
+        img = np.expand_dims(img, axis=0)
+
+        if self._model is None:
+            logger.warning("Model is None !")
+            return
+
+        predictions = self._model.predict(img)
+        #score = tf.nn.softmax(predictions[0])
         logger.debug(
             f"Predictions: {self._class_names[predictions]}")
         return predictions
@@ -377,7 +414,7 @@ class AI:
         self._loss = tf.losses.SparseCategoricalCrossentropy(from_logits=True)
         self._metrics = ["accuracy"]
 
-        self._tensorboard = None
+        self._tf_callbacks = []
 
     @property
     def data_augmentation(self):
@@ -536,18 +573,6 @@ class AI:
         del self._model
 
     @property
-    def tensorboard(self):
-        return self._tensorboard
-
-    @tensorboard.setter
-    def tensorboard(self, val):
-        self._tensorboard = val
-
-    @tensorboard.deleter
-    def tensorboard(self):
-        del self._tensorboard
-
-    @property
     def history(self):
         return self._history
 
@@ -558,6 +583,18 @@ class AI:
     @history.deleter
     def history(self):
         del self._history
+
+    @property
+    def tf_callbacks(self):
+        return self._tf_callbacks
+
+    @tf_callbacks.setter
+    def tf_callbacks(self, val):
+        self._tf_callbacks = val
+
+    @tf_callbacks.deleter
+    def tf_callbacks(self):
+        del self._tf_callbacks
 
 
 if __name__ == '__main__':
@@ -573,6 +610,9 @@ if __name__ == '__main__':
 
     parser.add_argument("--tensorboard", action=argparse.BooleanOptionalAction,
                         default=False, help="Enable tensorboard")
+
+    parser.add_argument("--checkpoint", action=argparse.BooleanOptionalAction,
+                        default=False, help="Enable checkpoint")
 
     parser.add_argument("--load", type=str,
                         default=None, help="Load a model")
@@ -648,8 +688,31 @@ if __name__ == '__main__':
     #logger.debug(f"metrics: {args.metrics}")
     #ai.metrics = args.metrics
 
-    logger.debug(f"tensorboard: {args.tensorboard}")
-    ai.tensorboard = args.tensorboard
+    if args.tensorboard:
+        logger.debug("Enable tensorboard")
+        log_dir = "./logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        logger.debug(f"Log dir: {log_dir}")
+
+        # Create folder for logs if not exist
+        Path(log_dir).mkdir(parents=True, exist_ok=True)
+        ai.tf_callbacks.append(tf.keras.callbacks.TensorBoard(
+            log_dir, histogram_freq=1, write_graph=True, write_images=True, update_freq=1))
+
+    if args.checkpoint:
+        logger.debug("Enable checkpoint")
+        checkpoint_path = "./checkpoints/" + \
+            datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        logger.debug(f"Checkpoint path: {checkpoint_path}")
+
+        # Create folder for checkpoints if not exist
+        Path(checkpoint_path).mkdir(parents=True, exist_ok=True)
+        ai.tf_callbacks.append(tf.keras.callbacks.ModelCheckpoint(
+            filepath=checkpoint_path,
+            save_weights_only=True,
+            monitor='val_accuracy',
+            mode='max',
+            save_best_only=True)
+        )
 
     # Enable GPU
     if args.gpu:
