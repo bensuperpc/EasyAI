@@ -9,6 +9,7 @@ import pathlib
 import datetime
 import sys
 from pathlib import Path
+import time
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -120,13 +121,7 @@ class AI:
         return model
 
     def get_ci_model(self):
-        # data_augmentation = tf.keras.Sequential([
-        #  layers.RandomFlip("horizontal_and_vertical"),
-        #  layers.RandomRotation(0.2),
-        # ])
-
         model = Sequential([
-            # data_augmentation,
             layers.Rescaling(1./255),
             layers.Conv2D(12, 3, padding='same', activation='relu'),
             layers.MaxPooling2D(),
@@ -212,8 +207,11 @@ class AI:
 
         self._data_dir = pathlib.Path(self._data_dir)
         self._list_ds = tf.data.Dataset.list_files(str(self._data_dir / '*/*'))
-        self._class_names = np.array(sorted(
-            [item.name for item in self._data_dir.glob('*') if item.name != "LICENSE.txt"]))
+
+        if not self._class_names:
+            self._class_names = np.array(sorted(
+                [item.name for item in self._data_dir.glob('*') if item.name != "LICENSE.txt"]))
+
         logger.info(f"Class names: {self._class_names}")
         logger.debug(f"Number of classes: {len(self._class_names)}")
 
@@ -277,7 +275,6 @@ class AI:
 
         return loss, accuracy
 
-    # TODO : Need to more test
     def predict_v1(self, img_path=None):
         logger.debug("Start prediction")
         if img_path is None:
@@ -290,24 +287,25 @@ class AI:
 
         image = cv.resize(image, (self._img_height, self._img_width))
 
-        image_tensor = tf.convert_to_tensor(image, dtype=tf.float32)
-        image_tensor = tf.expand_dims(image_tensor, 0)
+        #image = np.asarray(image).reshape(-1, self._img_height, self._img_width, 3)
+
+        image = tf.convert_to_tensor(image, dtype=tf.float32)
+        image = tf.expand_dims(image, 0)
 
         if self._model is None:
             logger.warning("Model is None !")
             return
 
-        predictions = self._model.predict(image_tensor)
+        predictions = np.argmax(self._model.predict(
+            image, use_multiprocessing=True))
 
-        logger.debug(
-            f"Predictions: {self._class_names[predictions]}")
+        #logger.debug(f"Predictions: {predictions}")
+        #logger.debug(f"Predictions: {self._class_names[predictions]} ")
         return predictions
 
     def predict_v2(self, img_path=None):
-        logger.debug("Start prediction")
-        img_width, img_height = 150, 150
         img = keras.preprocessing.image.load_img(
-            'image_path/image_name.jpg', target_size=(img_width, img_height))
+            img_path, target_size=(self._img_width, self._img_height))
         img = keras.preprocessing.image.img_to_array(img)
         img = np.expand_dims(img, axis=0)
 
@@ -315,11 +313,32 @@ class AI:
             logger.warning("Model is None !")
             return
 
-        predictions = self._model.predict(img)
+        predictions = np.argmax(self._model.predict(
+            img, use_multiprocessing=True))
         #score = tf.nn.softmax(predictions[0])
-        logger.debug(
-            f"Predictions: {self._class_names[predictions]}")
+        #logger.debug(f"Predictions: {self._class_names[predictions]}")
         return predictions
+
+    def predict(self, img_path=None):
+        logger.debug(f"Prediction path: {img_path}")
+
+        if self._model is None:
+            logger.error("Model is None !")
+            return
+
+        if img_path is None:
+            logger.error("Image path is None !")
+            return
+
+        img_path = pathlib.Path(img_path)
+        images = img_path.glob('*')
+
+        for image in images:
+            #start = time.process_time()
+            prediction = self.predict_v2(str(image))
+            #logger.warning(time.process_time() - start)
+            logger.debug(
+                f"Predictions: {self._class_names[prediction]} for {image}")
 
     def display_history(self):
         acc = self._history.history['accuracy']
@@ -621,6 +640,18 @@ class AI:
     def tf_callbacks(self):
         del self._tf_callbacks
 
+    @property
+    def class_names(self):
+        return self._class_names
+
+    @class_names.setter
+    def class_names(self, val):
+        self._class_names = val
+
+    @class_names.deleter
+    def class_names(self):
+        del self._class_names
+
 
 if __name__ == '__main__':
 
@@ -630,6 +661,7 @@ if __name__ == '__main__':
 
     parser.add_argument("--data_augmentation", action=argparse.BooleanOptionalAction,
                         default=True, help="Use data augmentation")
+
     parser.add_argument("--gpu", action=argparse.BooleanOptionalAction,
                         default=True, help="Use GPU")
 
@@ -657,6 +689,9 @@ if __name__ == '__main__':
                         default=None, help="Model path")
     #parser.add_argument("--optimizer", type=str, default="adam", help="Optimizer")
 
+    parser.add_argument("--class_names", type=str, nargs='+',
+                        default=[], help="Class names")
+
     parser.add_argument("--train_pourcent", type=float,
                         default=0.8, help="Train pourcent")
     parser.add_argument("--val_pourcent", type=float,
@@ -668,6 +703,9 @@ if __name__ == '__main__':
                         default=256, help="Image height")
     parser.add_argument("--img_width", type=int,
                         default=256, help="Image width")
+
+    parser.add_argument("--predict", type=str,
+                        default=None, help="Predict image")
 
     #parser.add_argument("--loss", type=str, default="categorical_crossentropy", help="Loss")
     #parser.add_argument("--metrics", type=str, default="accuracy", help="Metrics")
@@ -710,6 +748,9 @@ if __name__ == '__main__':
     logger.debug(f"img_width: {args.img_width}")
     ai.img_width = args.img_width
 
+    logger.debug(f"class_names: {args.class_names}")
+    ai.class_names = args.class_names
+
     #logger.debug(f"loss: {args.loss}")
     #ai.loss = args.loss
 
@@ -747,8 +788,8 @@ if __name__ == '__main__':
 
     # Enable GPU
     if args.gpu:
-        logger.debug("Enable GPU")
         ai.gpu()
+        logger.debug("Enable GPU support")
 
     if ai.data_dir is None:
         logger.warning("No data directory specified")
@@ -759,24 +800,30 @@ if __name__ == '__main__':
         ai.data_dir = pathlib.Path(tf.keras.utils.get_file(
             'flower_photos', origin=data_dir, untar=True))
 
-    ai.load_data()
-    ai.prepare_train()
+    if args.predict is None:
+        ai.load_data()
+        ai.prepare_train()
 
-    if args.continuous_integration:
-        ai.model = ai.get_ci_model()
+        if args.continuous_integration:
+            ai.model = ai.get_ci_model()
 
     if args.load is not None:
         ai.load_model(args.load)
     else:
         ai.load_model()
 
-    ai.compile()
-    ai.train()
-    ai.evaluate()
+    if args.predict is None:
+        ai.compile()
+        ai.train()
+        ai.evaluate()
 
-    if args.save is not None:
-        ai.save_model()
+        if args.save is not None:
+            ai.save_model(args.save)
 
-    if args.display:
-        ai.display_predict()
-        ai.display_history()
+        if args.display:
+            ai.display_predict()
+            ai.display_history()
+
+    if args.predict is not None:
+
+        ai.predict(args.predict)

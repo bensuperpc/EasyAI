@@ -24,14 +24,31 @@ Launch training without GPU:
 python3 -m open_nsfw.py --no-gpu
 ```
 
-Launch training, save model and enable tensorboard:
+Launch training, save model and set dataset path:
 
 ```bash
-python3 -m open_nsfw.py --save model.h5 --tensorboard
+python open_nsfw.py --data_dir ./dataset/flower_photos --save test_AI.h5
 ```
 
-## New features
+## Example
 
+Train a model with flowers dataset:
+
+```bash
+python open_nsfw.py --save test_AI.h5
+```
+
+Predict images (class_name order is important):
+
+```bash
+python open_nsfw.py --load test_AI.h5 --predict ./dataset/flower_photos/roses/ --class_name daisy dandelion roses sunflowers tulips
+```
+
+## Done features
+
+- Working model
+- Tensorboard integration
+- GPU support
 - Load and save model
 - Data augmentation
 - Argument parser
@@ -39,14 +56,14 @@ python3 -m open_nsfw.py --save model.h5 --tensorboard
 ## Work in progress features
 
 - Data set generator
-- Better tensorboard integration
+- Load and save weights
 
 ## Future features
 
 - Lite version
 - Docker image
 - pip package
-- Load and save weights
+
 
 ### Open source projects used
 

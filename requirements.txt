@@ -1,8 +1,8 @@
-numpy
-
 tensorflow
 tensorflow-datasets
 tensorboard_plugin_profile
+
+numpy
 
 opencv-python
 opencv-contrib-python
