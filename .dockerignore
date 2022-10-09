@@ -1,4 +1,2 @@
-logs/*
-
 dataset/*
 *.h5

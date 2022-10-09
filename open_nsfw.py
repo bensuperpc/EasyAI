@@ -349,6 +349,8 @@ class AI:
 
         epochs_range = range(self._epochs)
 
+        plt.style.use('ggplot')
+
         plt.figure(figsize=(8, 8))
         plt.subplot(1, 2, 1)
         plt.plot(epochs_range, acc, label='Training Accuracy')
@@ -364,6 +366,7 @@ class AI:
         plt.show()
 
     def plot_image(self, predictions_array, true_label, img, grid=False, pred_color='red', true_color='blue'):
+        plt.style.use('ggplot')
         plt.grid(grid)
         plt.xticks([])
         plt.yticks([])
@@ -381,6 +384,7 @@ class AI:
                    color=color)
 
     def plot_value_array(self, predictions_array, true_label, grid=False, pred_color='red', true_color='blue'):
+        plt.style.use('ggplot')
         plt.grid(grid)
         plt.xticks(range(len(self._class_names)))
         plt.yticks([])
@@ -417,7 +421,7 @@ class AI:
         plt.show()
 
     # Defining __init__ method
-    def __init__(self):
+    def __init__(self, **kwargs):
         logger.info(f"Python version: {sys.version}")
         logger.info(f"TF version: {tf.__version__}")
         logger.info(f"Keras version: {tf.keras.__version__}")
@@ -459,6 +463,9 @@ class AI:
         self._metrics = ["accuracy"]
 
         self._tf_callbacks = []
+
+        for key, val in kwargs.items():
+            self.__dict__[key] = val
 
     @property
     def data_augmentation(self):
