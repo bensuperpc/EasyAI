@@ -157,8 +157,14 @@ class AI:
             logger.warning("Model is None, load default model")
             self._model = self.get_model()
 
+            # Remove last layer
             self._model.pop()
+
             self._model.add(layers.Dense(len(self._class_names)))
+            #if len(self._class_names) >= 2:
+            #    self._model.add(layers.Dense(len(self._class_names)), activation="softmax")
+            #else:
+            #    self._model.add(layers.Dense(1), activation="sigmoid")
             #self._model.build((None, self._img_height, self._img_width, 3))
             # self._model.summary()
 
