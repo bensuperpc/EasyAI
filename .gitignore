@@ -2,3 +2,4 @@ logs/*
 
 dataset/*
 *.h5
+*.pyc

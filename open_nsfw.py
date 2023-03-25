@@ -467,198 +467,6 @@ class AI:
         for key, val in kwargs.items():
             self.__dict__[key] = val
 
-    @property
-    def data_augmentation(self):
-        return self._data_augmentation
-
-    @data_augmentation.setter
-    def data_augmentation(self, val):
-        self._data_augmentation = val
-
-    @data_augmentation.deleter
-    def data_augmentation(self):
-        del self._data_augmentation
-
-    @property
-    def epochs(self):
-        return self._epochs
-
-    @epochs.setter
-    def name(self, val):
-        self._epochs = val
-
-    @name.deleter
-    def epochs(self):
-        del self._epochs
-
-    @property
-    def batch_size(self):
-        return self._batch_size
-
-    @batch_size.setter
-    def batch_size(self, val):
-        self._batch_size = val
-
-    @batch_size.deleter
-    def batch_size(self):
-        del self._batch_size
-
-    @property
-    def data_dir(self):
-        return self._data_dir
-
-    @data_dir.setter
-    def name(self, val):
-        self._data_dir = val
-
-    @name.deleter
-    def data_dir(self):
-        del self._data_dir
-
-    @property
-    def optimizer(self):
-        return self._optimizer
-
-    @optimizer.setter
-    def optimizer(self, val):
-        self._optimizer = val
-
-    @optimizer.deleter
-    def optimizer(self):
-        del self._optimizer
-
-    @property
-    def train_pourcent(self):
-        return self._train_pourcent
-
-    @train_pourcent.setter
-    def train_pourcent(self, val):
-        self._train_pourcent = val
-
-    @train_pourcent.deleter
-    def train_pourcent(self):
-        del self._train_pourcent
-
-    @property
-    def val_pourcent(self):
-        return self._val_pourcent
-
-    @val_pourcent.setter
-    def val_pourcent(self, val):
-        self._val_pourcent = val
-
-    @val_pourcent.deleter
-    def val_pourcent(self):
-        del self._val_pourcent
-
-    @property
-    def test_pourcent(self):
-        return self._test_pourcent
-
-    @test_pourcent.setter
-    def test_pourcent(self, val):
-        self._test_pourcent = val
-
-    @test_pourcent.deleter
-    def test_pourcent(self):
-        del self._test_pourcent
-
-    @property
-    def img_height(self):
-        return self._img_height
-
-    @img_height.setter
-    def img_height(self, val):
-        self._img_height = val
-
-    @img_height.deleter
-    def img_height(self):
-        del self._img_height
-
-    @property
-    def img_width(self):
-        return self._img_width
-
-    @img_width.setter
-    def img_width(self, val):
-        self._img_width = val
-
-    @img_width.deleter
-    def img_width(self):
-        del self._img_width
-
-    @property
-    def loss(self):
-        return self._loss
-
-    @loss.setter
-    def loss(self, val):
-        self._loss = val
-
-    @loss.deleter
-    def loss(self):
-        del self._loss
-
-    @property
-    def metrics(self):
-        return self._metrics
-
-    @metrics.setter
-    def metrics(self, val):
-        self._metrics = val
-
-    @metrics.deleter
-    def metrics(self):
-        del self._metrics
-
-    @property
-    def model(self):
-        return self._model
-
-    @model.setter
-    def model(self, val):
-        self._model = val
-
-    @model.deleter
-    def model(self):
-        del self._model
-
-    @property
-    def history(self):
-        return self._history
-
-    @history.setter
-    def history(self, val):
-        self._history = val
-
-    @history.deleter
-    def history(self):
-        del self._history
-
-    @property
-    def tf_callbacks(self):
-        return self._tf_callbacks
-
-    @tf_callbacks.setter
-    def tf_callbacks(self, val):
-        self._tf_callbacks = val
-
-    @tf_callbacks.deleter
-    def tf_callbacks(self):
-        del self._tf_callbacks
-
-    @property
-    def class_names(self):
-        return self._class_names
-
-    @class_names.setter
-    def class_names(self, val):
-        self._class_names = val
-
-    @class_names.deleter
-    def class_names(self):
-        del self._class_names
-
 
 if __name__ == '__main__':
 
@@ -681,9 +489,9 @@ if __name__ == '__main__':
     parser.add_argument("--continuous-integration", action=argparse.BooleanOptionalAction,
                         default=False, help="Enable continuous integration test")
 
-    parser.add_argument("--load", type=str,
+    parser.add_argument("--load-model", type=str,
                         default=None, help="Load a model")
-    parser.add_argument("--save", type=str,
+    parser.add_argument("--save-model", type=str,
                         default=None, help="Save a model")
 
     parser.add_argument("--epochs", type=int, default=10,
@@ -723,49 +531,49 @@ if __name__ == '__main__':
     ai = AI()
 
     logger.debug(f"data_augmentation: {args.data_augmentation}")
-    ai.data_augmentation = args.data_augmentation
+    ai._data_augmentation = args.data_augmentation
 
     logger.debug(f"epochs: {args.epochs}")
-    ai.epochs = args.epochs
+    ai._epochs = args.epochs
 
     logger.debug(f"batch_size: {args.batch_size}")
-    ai.batch_size = args.batch_size
+    ai._batch_size = args.batch_size
 
     logger.debug(f"data_dir: {args.data_dir}")
-    ai.data_dir = args.data_dir
+    ai._data_dir = args.data_dir
 
     logger.debug(f"model_path: {args.model_path}")
-    ai.model_path = args.model_path
+    ai._model_path = args.model_path
 
     #logger.debug(f"optimizer: {args.optimizer}")
-    #ai.optimizer = args.optimizer
+    #ai._optimizer = args.optimizer
 
     logger.debug(f"train_pourcent: {args.train_pourcent}")
-    ai.train_pourcent = args.train_pourcent
+    ai._train_pourcent = args.train_pourcent
 
     logger.debug(f"val_pourcent: {args.val_pourcent}")
-    ai.val_pourcent = args.val_pourcent
+    ai._val_pourcent = args.val_pourcent
 
     logger.debug(f"test_pourcent: {args.test_pourcent}")
-    ai.test_pourcent = args.test_pourcent
+    ai._test_pourcent = args.test_pourcent
 
     logger.debug(f"img_height: {args.img_height}")
-    ai.img_height = args.img_height
+    ai._img_height = args.img_height
 
     logger.debug(f"img_width: {args.img_width}")
-    ai.img_width = args.img_width
+    ai._img_width = args.img_width
 
     logger.debug(f"class_names: {args.class_names}")
-    ai.class_names = args.class_names
+    ai._class_names = args.class_names
 
     #logger.debug(f"loss: {args.loss}")
-    #ai.loss = args.loss
+    #ai._loss = args.loss
 
     #logger.debug(f"metrics: {args.metrics}")
-    #ai.metrics = args.metrics
+    #ai._metrics = args.metrics
 
     logger.debug(f"continuous_integration: {args.continuous_integration}")
-    #ai.continuous_integration = args.continuous_integration
+    #ai._continuous_integration = args.continuous_integration
 
     if args.tensorboard:
         logger.debug("Enable tensorboard")
@@ -774,7 +582,7 @@ if __name__ == '__main__':
 
         # Create folder for logs if not exist
         Path(log_dir).mkdir(parents=True, exist_ok=True)
-        ai.tf_callbacks.append(tf.keras.callbacks.TensorBoard(
+        ai._tf_callbacks.append(tf.keras.callbacks.TensorBoard(
             log_dir, histogram_freq=1, write_graph=True, write_images=True, update_freq=1))
 
     if args.checkpoint:
@@ -785,7 +593,7 @@ if __name__ == '__main__':
 
         # Create folder for checkpoints if not exist
         Path(checkpoint_path).mkdir(parents=True, exist_ok=True)
-        ai.tf_callbacks.append(tf.keras.callbacks.ModelCheckpoint(
+        ai._tf_callbacks.append(tf.keras.callbacks.ModelCheckpoint(
             filepath=checkpoint_path,
             save_weights_only=True,
             monitor='val_accuracy',
@@ -798,13 +606,13 @@ if __name__ == '__main__':
         ai.gpu()
         logger.debug("Enable GPU support")
 
-    if ai.data_dir is None:
+    if ai._data_dir is None:
         logger.warning("No data directory specified")
         logger.warning("Chose default dataset")
         data_dir = "https://storage.googleapis.com/download.tensorflow.org/example_images/flower_photos.tgz"
         logger.warning(f"Download dataset from {data_dir}")
 
-        ai.data_dir = pathlib.Path(tf.keras.utils.get_file(
+        ai._data_dir = pathlib.Path(tf.keras.utils.get_file(
             'flower_photos', origin=data_dir, untar=True))
 
     if args.predict is None:
@@ -812,9 +620,9 @@ if __name__ == '__main__':
         ai.prepare_train()
 
         if args.continuous_integration:
-            ai.model = ai.get_ci_model()
+            ai._model = ai.get_ci_model()
 
-    if args.load is not None:
+    if args.load_model is not None:
         ai.load_model(args.load)
     else:
         ai.load_model()
@@ -824,7 +632,7 @@ if __name__ == '__main__':
         ai.train()
         ai.evaluate()
 
-        if args.save is not None:
+        if args.save_model is not None:
             ai.save_model(args.save)
 
         if args.display:
