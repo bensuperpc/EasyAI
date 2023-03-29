@@ -22,7 +22,7 @@ The main goal of this project is to create a NSFW image detector using tensorflo
 We recommend using a GPU with Hardware Acceleration for Tensorflow.
 
 | Hardware | minimum | recommended |
-| --- | --- | --- | --- |
+| --- | --- | --- |
 | CPU | 2 cores | 4 cores |
 | RAM | 4 GB | 8 GB |
 | GPU | 2 GB | 4 GB |

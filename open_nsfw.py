@@ -25,6 +25,8 @@ import loguru
 from loguru import logger
 import cv2 as cv
 
+tf.get_logger().setLevel('ERROR')
+tf.autograph.set_verbosity(2)
 
 class AI:
     __author__ = "Bensuperpc"
@@ -58,15 +60,15 @@ class AI:
 
         return tf.argmax(one_hot)
 
-    def decode_img(self, img):
+    def decode_img(self, file_path):
+        img = tf.io.read_file(file_path)
         img = tf.io.decode_jpeg(img, dct_method="INTEGER_ACCURATE", channels=3)
 
         return tf.image.resize(img, [self._img_height, self._img_width])
 
     def process_path(self, file_path):
         label = self.get_label(file_path)
-        img = tf.io.read_file(file_path)
-        img = self.decode_img(img)
+        img = self.decode_img(file_path)
 
         return img, label
 
@@ -111,9 +113,14 @@ class AI:
             layers.MaxPooling2D(),
             layers.Dropout(0.2),
             layers.Flatten(),
-            layers.Dense(256, activation='relu'),
-            layers.Dense(len(self._class_names))
+            layers.Dense(256, activation='relu')
         ])
+
+        # Add last layer
+        if len(self._class_names) >= 2:
+            model.add(layers.Dense(len(self._class_names), activation='softmax'))
+        else:
+            model.add(layers.Dense(len(self._class_names), activation='sigmoid'))
 
         model.build((None, self._img_height, self._img_width, 3))
         model.summary()
@@ -131,9 +138,14 @@ class AI:
             layers.MaxPooling2D(),
             layers.Dropout(0.2),
             layers.Flatten(),
-            layers.Dense(96, activation='relu'),
-            layers.Dense(len(self._class_names))
+            layers.Dense(96, activation='relu')
         ])
+
+        # Add last layer
+        if len(self._class_names) >= 2:
+            model.add(layers.Dense(len(self._class_names), activation='softmax'))
+        else:
+            model.add(layers.Dense(len(self._class_names), activation='sigmoid'))
 
         model.build((None, self._img_height, self._img_width, 3))
         model.summary()
@@ -404,8 +416,7 @@ class AI:
     def display_predict(self):
         image_batch, label_batch = next(iter(self._test_ds))
 
-        probability_model = tf.keras.Sequential([self._model,
-                                                tf.keras.layers.Softmax()])
+        probability_model = tf.keras.Sequential([self._model, tf.keras.layers.Softmax()])
         predictions = probability_model.predict(image_batch)
 
         num_rows = 5
@@ -646,5 +657,4 @@ if __name__ == '__main__':
             ai.display_history()
 
     if args.predict is not None:
-
         ai.predict(args.predict)

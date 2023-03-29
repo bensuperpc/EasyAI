@@ -8,7 +8,7 @@ FROM $DOCKER_IMAGE
 LABEL author="Bensuperpc <bensuperpc@gmail.com>"
 LABEL mantainer="Bensuperpc <bensuperpc@gmail.com>"
 
-RUN pacman-key --init && pacman -Syu --noconfirm && \
+RUN pacman-key --init && pacman -Sy archlinux-keyring --noconfirm && pacman -Syu --noconfirm && \
     pacman -S --noconfirm \
     ffmpeg \
     cuda-tools \
@@ -26,10 +26,11 @@ RUN pacman -S --noconfirm \
     && pacman -Scc --noconfirm
 
 #RUN pip install --upgrade pip
-COPY requirements.txt requirements.txt
-RUN pip install -r requirements.txt
+#COPY requirements.txt requirements.txt
+#RUN pip install -r requirements.txt
+
+WORKDIR /app
 
 COPY open_nsfw.py open_nsfw.py
 
-ENTRYPOINT [ "python", "open_nsfw.py" ]
-# CMD ["ct-ng"]
+CMD [ "python", "open_nsfw.py" ]
