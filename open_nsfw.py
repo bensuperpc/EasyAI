@@ -105,15 +105,15 @@ class AI:
         model = Sequential([
             # data_augmentation,
             layers.Rescaling(1./255),
-            layers.Conv2D(32, 3, padding='same', activation='relu'),
+            layers.Conv2D(48, 3, padding='same', activation='relu'),
             layers.MaxPooling2D(),
-            layers.Conv2D(64, 3, padding='same', activation='relu'),
+            layers.Conv2D(96, 3, padding='same', activation='relu'),
             layers.MaxPooling2D(),
-            layers.Conv2D(128, 3, padding='same', activation='relu'),
+            layers.Conv2D(256, 3, padding='same', activation='relu'),
             layers.MaxPooling2D(),
-            layers.Dropout(0.2),
+            layers.Dropout(0.1),
             layers.Flatten(),
-            layers.Dense(256, activation='relu')
+            layers.Dense(384, activation='relu')
         ])
 
         # Add last layer
@@ -132,13 +132,13 @@ class AI:
             layers.Rescaling(1./255),
             layers.Conv2D(12, 3, padding='same', activation='relu'),
             layers.MaxPooling2D(),
-            layers.Conv2D(24, 3, padding='same', activation='relu'),
+            layers.Conv2D(16, 3, padding='same', activation='relu'),
             layers.MaxPooling2D(),
-            layers.Conv2D(48, 3, padding='same', activation='relu'),
+            layers.Conv2D(32, 3, padding='same', activation='relu'),
             layers.MaxPooling2D(),
             layers.Dropout(0.2),
             layers.Flatten(),
-            layers.Dense(96, activation='relu')
+            layers.Dense(64, activation='relu')
         ])
 
         # Add last layer
@@ -414,14 +414,20 @@ class AI:
         thisplot[true_label].set_color(true_color)
 
     def display_predict(self):
+        num_rows = 5
+        num_cols = 3
+        num_images = num_rows*num_cols
+
         image_batch, label_batch = next(iter(self._test_ds))
+
+        while len(label_batch) < num_images:
+            new_image_batch, new_label_batch = next(iter(self._test_ds))
+            image_batch = tf.concat([image_batch, new_image_batch], axis=0)
+            label_batch = tf.concat([label_batch, new_label_batch], axis=0)
 
         probability_model = tf.keras.Sequential([self._model, tf.keras.layers.Softmax()])
         predictions = probability_model.predict(image_batch)
 
-        num_rows = 5
-        num_cols = 3
-        num_images = num_rows*num_cols
         plt.figure(figsize=(2*2*num_cols, 2*num_rows))
 
         for i in range(num_images):
@@ -449,10 +455,10 @@ class AI:
 
         self.__version__ = "0.0.1"
 
-        self._batch_size = 24
+        self._batch_size = 12
         self._img_height = 256
         self._img_width = 256
-        self._epochs = 8
+        self._epochs = 12
 
         self._AUTOTUNE = tf.data.AUTOTUNE
 
@@ -487,6 +493,9 @@ class AI:
 
 if __name__ == '__main__':
 
+    # Init AI
+    ai = AI()
+
     parser = ArgumentParser()
     parser.add_argument("--display", action=argparse.BooleanOptionalAction,
                         default=True, help="Display the result")
@@ -511,10 +520,10 @@ if __name__ == '__main__':
     parser.add_argument("--save-model", type=str,
                         default=None, help="Save a model")
 
-    parser.add_argument("--epochs", type=int, default=10,
+    parser.add_argument("--epochs", type=int, default=ai._epochs,
                         help="Number of epochs")
     parser.add_argument("--batch_size", type=int,
-                        default=24, help="Batch size")
+                        default=ai._batch_size, help="Batch size")
     parser.add_argument("--data_dir", type=str,
                         default=None, help="Data directory")
     parser.add_argument("--model_path", type=str,
@@ -525,16 +534,16 @@ if __name__ == '__main__':
                         default=[], help="Class names")
 
     parser.add_argument("--train_pourcent", type=float,
-                        default=0.8, help="Train pourcent")
+                        default=ai._train_pourcent, help="Train pourcent")
     parser.add_argument("--val_pourcent", type=float,
-                        default=0.1, help="Validation pourcent")
+                        default=ai._val_pourcent, help="Validation pourcent")
     parser.add_argument("--test_pourcent", type=float,
-                        default=0.1, help="Test pourcent")
+                        default=ai._test_pourcent, help="Test pourcent")
 
     parser.add_argument("--img_height", type=int,
-                        default=256, help="Image height")
+                        default=ai._img_height, help="Image height")
     parser.add_argument("--img_width", type=int,
-                        default=256, help="Image width")
+                        default=ai._img_width, help="Image width")
 
     parser.add_argument("--predict", type=str,
                         default=None, help="Predict image")
@@ -543,9 +552,6 @@ if __name__ == '__main__':
     #parser.add_argument("--metrics", type=str, default="accuracy", help="Metrics")
 
     args = parser.parse_args()
-
-    # Init AI
-    ai = AI()
 
     logger.debug(f"data_augmentation: {args.data_augmentation}")
     ai._data_augmentation = args.data_augmentation
