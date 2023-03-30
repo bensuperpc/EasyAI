@@ -54,15 +54,17 @@ class AI:
                 # Memory growth must be set before GPUs have been initialized
                 logger.error(e)
 
+    # Get label from file path (Tensor type) and return the index of the label
     def get_label(self, file_path):
         parts = tf.strings.split(file_path, os.path.sep)
-        one_hot = parts[-2] == self._class_names
 
+        one_hot = parts[-2] == self._class_names
+        #tf.print(parts[-2], self._class_names, one_hot, output_stream=sys.stdout)
         return tf.argmax(one_hot)
 
     def decode_img(self, file_path):
         img = tf.io.read_file(file_path)
-        img = tf.io.decode_jpeg(img, dct_method="INTEGER_ACCURATE", channels=3)
+        img = tf.io.decode_image(img, channels=3, expand_animations=False)
 
         return tf.image.resize(img, [self._img_height, self._img_width])
 
@@ -103,7 +105,6 @@ class AI:
         # ])
 
         model = Sequential([
-            # data_augmentation,
             layers.Rescaling(1./255),
             layers.Conv2D(48, 3, padding='same', activation='relu'),
             layers.MaxPooling2D(),
