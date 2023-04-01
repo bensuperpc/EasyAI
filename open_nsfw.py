@@ -4,12 +4,12 @@ import argparse
 from argparse import ArgumentParser
 
 import os
-import PIL
 import pathlib
 import datetime
 import sys
 from pathlib import Path
 import time
+import json
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -27,6 +27,9 @@ import cv2 as cv
 
 tf.get_logger().setLevel('ERROR')
 tf.autograph.set_verbosity(2)
+
+from tensorflow_libs import ben_model_v1, ci_model_v1, vgg11, vgg13, vgg16, vgg19
+from tensorflow_libs import display_history, plot_image, plot_value_array, display_predict
 
 class AI:
     __author__ = "Bensuperpc"
@@ -51,16 +54,19 @@ class AI:
                 logger.debug(
                     f"{len(gpus)} Physical GPUs, {len(logical_gpus)} Logical GPUs")
             except RuntimeError as e:
-                # Memory growth must be set before GPUs have been initialized
                 logger.error(e)
 
-    # Get label from file path (Tensor type) and return the index of the label
+    # Get label from file path (Tensor type) and list of class true/false
     def get_label(self, file_path):
         parts = tf.strings.split(file_path, os.path.sep)
 
-        one_hot = parts[-2] == self._class_names
-        #tf.print(parts[-2], self._class_names, one_hot, output_stream=sys.stdout)
-        return tf.argmax(one_hot)
+        return parts[-2] == self._class_names
+        #one_hot = parts[-2] == self._class_names
+        #tf.print(parts[-2], output_stream=sys.stdout)
+        #tf.print(self._class_names, output_stream=sys.stdout)
+        #tf.print(one_hot, output_stream=sys.stdout)
+        #tf.print(tf.argmax(one_hot), output_stream=sys.stdout)
+        #return tf.argmax(one_hot) # and return the index of the label
 
     def decode_img(self, file_path):
         img = tf.io.read_file(file_path)
@@ -75,10 +81,6 @@ class AI:
         return img, label
 
     def configure_for_performance(self, ds):
-        ds = ds.cache()
-        ds = ds.shuffle(buffer_size=1000)
-        ds = ds.batch(self._batch_size)
-
         if self._data_augmentation:
             logger.debug("Using data augmentation")
             data_augmentation = tf.keras.Sequential([
@@ -94,7 +96,11 @@ class AI:
             ds = ds.concatenate(ds_aug)
             logger.debug(f"Dataset size with augmentation: {len(ds)}")
             logger.debug("Data augmentation done")
-
+        
+        ds = ds.cache()
+        ds = ds.shuffle(buffer_size=1000)
+        #ds = ds.repeat()
+        ds = ds.batch(self._batch_size)
         ds = ds.prefetch(buffer_size=self._AUTOTUNE)
         return ds
 
@@ -103,19 +109,8 @@ class AI:
         #  layers.RandomFlip("horizontal_and_vertical"),
         #  layers.RandomRotation(0.2),
         # ])
-
-        model = Sequential([
-            layers.Rescaling(1./255),
-            layers.Conv2D(48, 3, padding='same', activation='relu'),
-            layers.MaxPooling2D(),
-            layers.Conv2D(96, 3, padding='same', activation='relu'),
-            layers.MaxPooling2D(),
-            layers.Conv2D(256, 3, padding='same', activation='relu'),
-            layers.MaxPooling2D(),
-            layers.Dropout(0.1),
-            layers.Flatten(),
-            layers.Dense(384, activation='relu')
-        ])
+        model = ben_model_v1(input_shape=(self._img_height, self._img_width, 3))
+        #model = vgg11(input_shape=(self._img_height, self._img_width, 3))
 
         # Add last layer
         if len(self._class_names) >= 2:
@@ -129,18 +124,7 @@ class AI:
         return model
 
     def get_ci_model(self):
-        model = Sequential([
-            layers.Rescaling(1./255),
-            layers.Conv2D(12, 3, padding='same', activation='relu'),
-            layers.MaxPooling2D(),
-            layers.Conv2D(16, 3, padding='same', activation='relu'),
-            layers.MaxPooling2D(),
-            layers.Conv2D(32, 3, padding='same', activation='relu'),
-            layers.MaxPooling2D(),
-            layers.Dropout(0.2),
-            layers.Flatten(),
-            layers.Dense(64, activation='relu')
-        ])
+        model = ci_model_v1(input_shape=(self._img_height, self._img_width, 3))
 
         # Add last layer
         if len(self._class_names) >= 2:
@@ -360,89 +344,10 @@ class AI:
                 f"Predictions: {self._class_names[prediction]} for {image}")
 
     def display_history(self):
-        acc = self._history.history['accuracy']
-        val_acc = self._history.history['val_accuracy']
-
-        loss = self._history.history['loss']
-        val_loss = self._history.history['val_loss']
-
-        epochs_range = range(self._epochs)
-
-        plt.style.use('ggplot')
-
-        plt.figure(figsize=(8, 8))
-        plt.subplot(1, 2, 1)
-        plt.plot(epochs_range, acc, label='Training Accuracy')
-        plt.plot(epochs_range, val_acc, label='Validation Accuracy')
-        plt.legend(loc='lower right')
-        plt.title('Training and Validation Accuracy')
-
-        plt.subplot(1, 2, 2)
-        plt.plot(epochs_range, loss, label='Training Loss')
-        plt.plot(epochs_range, val_loss, label='Validation Loss')
-        plt.legend(loc='upper right')
-        plt.title('Training and Validation Loss')
-        plt.show()
-
-    def plot_image(self, predictions_array, true_label, img, grid=False, pred_color='red', true_color='blue'):
-        plt.style.use('ggplot')
-        plt.grid(grid)
-        plt.xticks([])
-        plt.yticks([])
-        img = np.array(img/np.amax(img)*255, np.int32)
-        plt.imshow(img, cmap=plt.cm.binary)
-        predicted_label = np.argmax(predictions_array)
-
-        if predicted_label == true_label:
-            color = true_color
-        else:
-            color = pred_color
-        plt.xlabel("{} {:2.0f}% ({})".format(self._class_names[predicted_label],
-                                             100*np.max(predictions_array),
-                                             self._class_names[true_label]),
-                   color=color)
-
-    def plot_value_array(self, predictions_array, true_label, grid=False, pred_color='red', true_color='blue'):
-        plt.style.use('ggplot')
-        plt.grid(grid)
-        plt.xticks(range(len(self._class_names)))
-        plt.yticks([])
-        thisplot = plt.bar(range(len(self._class_names)),
-                           predictions_array, color="#777777")
-        plt.ylim([0, 1])
-        predicted_label = np.argmax(predictions_array)
-        thisplot[predicted_label].set_color(pred_color)
-        thisplot[true_label].set_color(true_color)
+        display_history(self._history, self._epochs)
 
     def display_predict(self):
-        num_rows = 5
-        num_cols = 3
-        num_images = num_rows*num_cols
-
-        image_batch, label_batch = next(iter(self._test_ds))
-
-        while len(label_batch) < num_images:
-            new_image_batch, new_label_batch = next(iter(self._test_ds))
-            image_batch = tf.concat([image_batch, new_image_batch], axis=0)
-            label_batch = tf.concat([label_batch, new_label_batch], axis=0)
-
-        probability_model = tf.keras.Sequential([self._model, tf.keras.layers.Softmax()])
-        predictions = probability_model.predict(image_batch)
-
-        plt.figure(figsize=(2*2*num_cols, 2*num_rows))
-
-        for i in range(num_images):
-            _label_batch = label_batch[i]
-            _label_batch = _label_batch.numpy().tolist()
-
-            plt.subplot(num_rows, 2*num_cols, 2*i+1)
-            self.plot_image(predictions[i], _label_batch, image_batch[i])
-
-            plt.subplot(num_rows, 2*num_cols, 2*i+2)
-            self.plot_value_array(predictions[i], _label_batch)
-
-        plt.tight_layout()
-        plt.show()
+        display_predict(self._model, self._test_ds, self._class_names, num_rows=5, num_cols=3)
 
     # Defining __init__ method
     def __init__(self, **kwargs):
@@ -456,7 +361,7 @@ class AI:
 
         self.__version__ = "0.0.1"
 
-        self._batch_size = 12
+        self._batch_size = 4
         self._img_height = 256
         self._img_width = 256
         self._epochs = 12
@@ -480,11 +385,16 @@ class AI:
         self._history = None
 
         self._model = None
-        # tf.keras.optimizers.Adam(learning_rate=1e-4)
-        self._optimizer = "adam"
+        self._optimizer = tf.keras.optimizers.Adam(learning_rate=1e-4)
 
-        self._loss = tf.losses.SparseCategoricalCrossentropy(from_logits=True)
-        self._metrics = ["accuracy"]
+        #self._loss = tf.losses.SparseCategoricalCrossentropy(from_logits=True)
+        #self._metrics = tf.metrics.SparseCategoricalAccuracy()
+
+        #self._loss = tf.losses.BinaryCrossentropy(from_logits=True)
+        #self._metrics = tf.metrics.BinaryAccuracy()
+
+        self._loss = tf.losses.CategoricalCrossentropy(from_logits=True)
+        self._metrics = tf.metrics.CategoricalAccuracy()
 
         self._tf_callbacks = []
 
