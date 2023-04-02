@@ -28,8 +28,9 @@ import cv2 as cv
 tf.get_logger().setLevel('ERROR')
 tf.autograph.set_verbosity(2)
 
-from tensorflow_libs import ben_model_v1, ci_model_v1, vgg11, vgg13, vgg16, vgg19
+from tensorflow_libs import ben_model_v1, ci_model_v1, vgg11, vgg13, vgg16, vgg19, ben_model_v1_class
 from tensorflow_libs import display_history, plot_image, plot_value_array, display_predict
+from tensorflow_libs import gpu
 
 class AI:
     __author__ = "Bensuperpc"
@@ -44,30 +45,21 @@ class AI:
     __name__ = "AI"
 
     def gpu(self):
-        gpus = tf.config.list_physical_devices('GPU')
-        if gpus:
-            try:
-                # Currently, memory growth needs to be the same across GPUs
-                for gpu in gpus:
-                    tf.config.experimental.set_memory_growth(gpu, True)
-                logical_gpus = tf.config.list_logical_devices('GPU')
-                logger.debug(
-                    f"{len(gpus)} Physical GPUs, {len(logical_gpus)} Logical GPUs")
-            except RuntimeError as e:
-                logger.error(e)
+        gpu()
 
     # Get label from file path (Tensor type) and list of class true/false
     def get_label(self, file_path):
         parts = tf.strings.split(file_path, os.path.sep)
-
         return parts[-2] == self._class_names
+        
+    
         #one_hot = parts[-2] == self._class_names
         #tf.print(parts[-2], output_stream=sys.stdout)
         #tf.print(self._class_names, output_stream=sys.stdout)
         #tf.print(one_hot, output_stream=sys.stdout)
         #tf.print(tf.argmax(one_hot), output_stream=sys.stdout)
         #return tf.argmax(one_hot) # and return the index of the label
-
+    
     def decode_img(self, file_path):
         img = tf.io.read_file(file_path)
         img = tf.io.decode_image(img, channels=3, expand_animations=False)
@@ -109,16 +101,11 @@ class AI:
         #  layers.RandomFlip("horizontal_and_vertical"),
         #  layers.RandomRotation(0.2),
         # ])
-        model = ben_model_v1(input_shape=(self._img_height, self._img_width, 3))
-        #model = vgg11(input_shape=(self._img_height, self._img_width, 3))
 
-        # Add last layer
-        if len(self._class_names) >= 2:
-            model.add(layers.Dense(len(self._class_names), activation='softmax'))
-        else:
-            model.add(layers.Dense(len(self._class_names), activation='sigmoid'))
+        model = ben_model_v1_class(input_shape=(self._img_height, self._img_width, 3), 
+            output_size=len(self._class_names))
 
-        model.build((None, self._img_height, self._img_width, 3))
+        model.build()
         model.summary()
 
         return model
@@ -156,14 +143,8 @@ class AI:
 
             # Remove last layer
             self._model.pop()
-
             self._model.add(layers.Dense(len(self._class_names)))
-            #if len(self._class_names) >= 2:
-            #    self._model.add(layers.Dense(len(self._class_names)), activation="softmax")
-            #else:
-            #    self._model.add(layers.Dense(1), activation="sigmoid")
-            #self._model.build((None, self._img_height, self._img_width, 3))
-            # self._model.summary()
+
 
     def save_model(self, model_path=None):
         if model_path is not None:
