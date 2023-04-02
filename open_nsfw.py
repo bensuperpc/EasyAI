@@ -28,9 +28,10 @@ import cv2 as cv
 tf.get_logger().setLevel('ERROR')
 tf.autograph.set_verbosity(2)
 
-from tensorflow_libs import ben_model_v1, ci_model_v1, vgg11, vgg13, vgg16, vgg19, ben_model_v1_class
+from tensorflow_libs import ci_model_v1, vgg11, vgg13, vgg16, vgg19, ben_model_v1
 from tensorflow_libs import display_history, plot_image, plot_value_array, display_predict
 from tensorflow_libs import gpu
+from tensorflow_libs import image_to_tensor, predict_v1, predict_v2
 
 class AI:
     __author__ = "Bensuperpc"
@@ -102,7 +103,7 @@ class AI:
         #  layers.RandomRotation(0.2),
         # ])
 
-        model = ben_model_v1_class(input_shape=(self._img_height, self._img_width, 3), 
+        model = ben_model_v1(input_shape=(self._img_height, self._img_width, 3), 
             output_size=len(self._class_names))
 
         model.build()
@@ -111,13 +112,9 @@ class AI:
         return model
 
     def get_ci_model(self):
-        model = ci_model_v1(input_shape=(self._img_height, self._img_width, 3))
 
-        # Add last layer
-        if len(self._class_names) >= 2:
-            model.add(layers.Dense(len(self._class_names), activation='softmax'))
-        else:
-            model.add(layers.Dense(len(self._class_names), activation='sigmoid'))
+        model = ci_model_v1(input_shape=(self._img_height, self._img_width, 3), 
+            output_size=len(self._class_names))
 
         model.build((None, self._img_height, self._img_width, 3))
         model.summary()
@@ -259,50 +256,6 @@ class AI:
 
         return loss, accuracy
 
-    def predict_v1(self, img_path=None):
-        logger.debug("Start prediction")
-        if img_path is None:
-            logger.warning("Image path is None !")
-            return
-
-        image = cv.imread(img_path, 0)
-
-        image = cv.cvtColor(image, cv.COLOR_BGR2RGB)
-
-        image = cv.resize(image, (self._img_height, self._img_width))
-
-        #image = np.asarray(image).reshape(-1, self._img_height, self._img_width, 3)
-
-        image = tf.convert_to_tensor(image, dtype=tf.float32)
-        image = tf.expand_dims(image, 0)
-
-        if self._model is None:
-            logger.warning("Model is None !")
-            return
-
-        predictions = np.argmax(self._model.predict(
-            image, use_multiprocessing=True))
-
-        #logger.debug(f"Predictions: {predictions}")
-        #logger.debug(f"Predictions: {self._class_names[predictions]} ")
-        return predictions
-
-    def predict_v2(self, img_path=None):
-        img = keras.preprocessing.image.load_img(
-            img_path, target_size=(self._img_width, self._img_height))
-        img = keras.preprocessing.image.img_to_array(img)
-        img = np.expand_dims(img, axis=0)
-
-        if self._model is None:
-            logger.warning("Model is None !")
-            return
-
-        predictions = np.argmax(self._model.predict(
-            img, use_multiprocessing=True))
-        #score = tf.nn.softmax(predictions[0])
-        #logger.debug(f"Predictions: {self._class_names[predictions]}")
-        return predictions
-
     def predict(self, img_path=None):
         logger.debug(f"Prediction path: {img_path}")
 
@@ -319,7 +272,7 @@ class AI:
 
         for image in images:
             #start = time.process_time()
-            prediction = self.predict_v2(str(image))
+            prediction = predict_v2(str(image), self._model, (self._img_height, self._img_width))
             #logger.warning(time.process_time() - start)
             logger.debug(
                 f"Predictions: {self._class_names[prediction]} for {image}")
