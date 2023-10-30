@@ -1,6 +1,6 @@
 # EasyAI
 
-## _Make your own AI easily ! via tensorflow_
+## _Make your own AI easily ! via tensorflow 2_
 
 ## Description
 
