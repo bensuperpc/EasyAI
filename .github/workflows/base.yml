@@ -1,4 +1,4 @@
-name: open_nsfw
+name: EasyAI
 
 on:
   push:
@@ -40,4 +40,4 @@ jobs:
       
       - name: "run tests"
         run: |
-          python open_nsfw.py --no-display --continuous-integration
+          python EasyAI.py --no-display --continuous-integration
