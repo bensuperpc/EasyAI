@@ -1,12 +1,12 @@
-# open_nsfw
+# EasyAI
 
-## _Not Suitable for Work (NSFW) image detector via tensorflow_
+## _Make your own AI easily ! via tensorflow_
 
-[![open_nsfw](https://github.com/bensuperpc/open_nsfw/actions/workflows/base.yml/badge.svg)](https://github.com/bensuperpc/open_nsfw/actions/workflows/base.yml)
+[![EasyAI](https://github.com/bensuperpc/EasyAI/actions/workflows/base.yml/badge.svg)](https://github.com/bensuperpc/EasyAI/actions/workflows/base.yml)
 
 ## Description
 
-The main goal of this project is to create a NSFW image detector using tensorflow.
+The main goal of this project is to create an AI easily using tensorflow.
 
 ## Software requirements
 
@@ -32,25 +32,25 @@ We recommend using a GPU with Hardware Acceleration for Tensorflow.
 Get help:
 
 ```bash
-python3 open_nsfw.py --help
+python3 EasyAI.py --help
 ```
 
 Launch training:
 
 ```bash
-python3 open_nsfw.py
+python3 EasyAI.py
 ```
 
 Launch training without GPU:
 
 ```bash
-python3 open_nsfw.py --no-gpu
+python3 EasyAI.py --no-gpu
 ```
 
 Launch training, save model and set dataset path:
 
 ```bash
-python open_nsfw.py --data_dir ./dataset/flower_photos --save test_AI.h5
+python EasyAI.py --data_dir ./dataset/flower_photos --save test_AI.h5
 ```
 
 ## Example
@@ -58,13 +58,13 @@ python open_nsfw.py --data_dir ./dataset/flower_photos --save test_AI.h5
 Train a model with flowers dataset:
 
 ```bash
-python open_nsfw.py --save test_AI.h5
+python EasyAI.py --save test_AI.h5
 ```
 
 Predict images (**class_name order is important**):
 
 ```bash
-python open_nsfw.py --load test_AI.h5 --predict ./dataset/flower_photos/roses/ --class_name daisy dandelion roses sunflowers tulips
+python EasyAI.py --load test_AI.h5 --predict ./dataset/flower_photos/roses/ --class_name daisy dandelion roses sunflowers tulips
 ```
 
 ## Command table
