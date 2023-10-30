@@ -2,9 +2,11 @@
 
 ## _Make your own AI easily ! via tensorflow 2_
 
+[![EasyAI](https://github.com/bensuperpc/EasyAI/actions/workflows/base.yml/badge.svg)](https://github.com/bensuperpc/EasyAI/actions/workflows/base.yml)
+
 ## Description
 
-The main goal of this project is to create an AI easily using tensorflow.
+The main goal of this project is to create an AI easily using tensorflow
 
 ## Software requirements
 
